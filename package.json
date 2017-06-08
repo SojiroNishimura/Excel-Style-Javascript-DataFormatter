@@ -4,7 +4,7 @@
   "description": "Excel-Style Javascript Data Formatter",
   "main": "lib/index.js",
   "scripts": {
-    "test": "mocha",
+    "test": "mocha --compilers js:babel-register -w",
     "dev": "gulp dev",
     "clean": "gulp clean",
     "build": "gulp build",

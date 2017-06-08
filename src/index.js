@@ -217,8 +217,8 @@ module.exports = class DataFormatter {
   }
 
   restoreOrigins(value, origins) {
-    return value.toString().replace(/\[(?:(\$*?)|(.*?))\]/g, (a, m1)=>
-      m1 && origins[m1.length - 1] || a
+    return value.toString().replace(/\[(?:(\$*?)|(.*?))\]/g, (a, m1)=> 
+      m1 && origins[`[${m1}]`] || a
     );
   }
 
@@ -628,7 +628,7 @@ module.exports = class DataFormatter {
     return code.toString();
   }
 
-  createNumberCode(section, shouldAbsNumber) {
+  createNumberCode(section, shouldAbsNumber, origins) {
     let numberCode = new Code();
 
     // Abs
@@ -652,8 +652,21 @@ module.exports = class DataFormatter {
 
       // Spaces before end and decimal separator (.)
       section = section.replace(/(0|#|\?)(\s+)([^0?#]*?)($|\.)/, (a, m1, m2, m3, m4)=> {
-        factor *= Math.pow(1000, m2.length);
-        return m1 + m3 + m4;
+        // Find currency symbol from pattern
+        const key = m3.match(/\[.*?\]/);
+        const origin = origins[key];
+        const hasBareSymbol = m3 === '$' || m3 === '€' || m3 === '£';
+        const hasQuotedSymbol = origin === '$' || origin === '€' || origin === '£';
+
+        const hasSpace = m2.length > 0;
+        let space = '';
+        if (hasSpace && (hasBareSymbol || hasQuotedSymbol)) {
+          space = m2;
+        } else {
+          // View space as divide by 1000 if number is separated by space
+          factor *= Math.pow(1000, hasSpace ? 1 : 0);
+        }
+        return m1 + space + m3 + m4;
       });
 
       // Percents
@@ -669,25 +682,23 @@ module.exports = class DataFormatter {
         `, factor);
       }
 
-      let fractialMatch;
-      let decimalMatch;
+      let fractialMatch = section.match(/(.*?)\/(.*)/);
+      let decimalMatch = section.match(/(.*?)\.(.*)/);
 
       switch (true) {
-
         // Fractial form
-        case !!(fractialMatch = section.match(/(.*?)\/(.*)/)):
+        case !!(fractialMatch):
           numberCode.append(this.createNumberFractialCode(fractialMatch));
           break;
 
         // Decimal form
-        case !!(decimalMatch = section.match(/(.*?)\.(.*)/)):
+        case !!(decimalMatch):
           numberCode.append(this.createNumberDecimalCode(decimalMatch));
           break;
 
         // Integer form
         default:
           numberCode.append(this.createNumberIntegerCode(section));
-
       }
     }
 
@@ -766,7 +777,7 @@ module.exports = class DataFormatter {
     return code.toString();
   }
 
-  createSectionCode(section, sectionIndex, sectionsCount) {
+  createSectionCode(section, sectionIndex, sectionsCount, origins) {
     // Start creating code for function
     let code = new Code();
 
@@ -841,7 +852,7 @@ module.exports = class DataFormatter {
         if (!condition) {
           condition = 'type === "Number"';
         }
-        formatCode.append(this.createNumberCode(section, shouldAbsNumber));
+        formatCode.append(this.createNumberCode(section, shouldAbsNumber, origins));
         break;
 
       // DateTime
@@ -881,25 +892,30 @@ module.exports = class DataFormatter {
   }
 
   createPatternCode(pattern) {
-    let origins = [];
     let replaces = '';
+    const origins = {};
 
     // Find quotes, slash symbols
     let patternReplaced = pattern.replace(/"([^"]+)"|\\(.?)|(_.?)|(\*.?)|(")/g, function(a, m1, m2, m3) {
       // Quote found
       if (m1) {
-        origins.push(m1.replace(/("|'|\\)/g, "\\$1"));
-        return `[${(replaces += '$')}]`;
+        const quoted = m1.replace(/("|'|\\)/g, "\\$1");
+        const replaced = `[${(replaces += '$')}]`;
+        origins[replaced] = quoted;
+        return replaced;
       }
       // Slash found
       if (m2) {
-        origins.push(m2.replace(/("|'|\\)/g, "\\$1"));
-        return `[${(replaces += '$')}]`
+        const slashed = m2.replace(/("|'|\\)/g, "\\$1");
+        const replaced = `[${(replaces += '$')}]`;
+        origins[replaced] = slashed;
+        return replaced;
       }
       // Space found
       if (m3) {
-        origins.push(' ');
-        return `[${(replaces += '$')}]`;
+        const replaced = `[${(replaces += '$')}]`;
+        origins[replaced] = ' ';
+        return replaced;
       }
       return '';
     });
@@ -932,7 +948,7 @@ module.exports = class DataFormatter {
 
     // Loop trough sections
     sections.forEach((section, sectionIndex)=>
-      code.append(this.createSectionCode(section, sectionIndex, sections.length))
+      code.append(this.createSectionCode(section, sectionIndex, sections.length, origins))
     );
 
     // Return statement
