@@ -33,22 +33,21 @@ module.exports = function () {
    *   transformCode {function} - code transformer
    * @param {object} options
    */
-
   function DataFormatter() {
-    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-
-    var _ref$debug = _ref.debug;
-    var debug = _ref$debug === undefined ? false : _ref$debug;
-    var _ref$UTCOffset = _ref.UTCOffset;
-    var UTCOffset = _ref$UTCOffset === undefined ? null : _ref$UTCOffset;
-    var _ref$locale = _ref.locale;
-    var locale = _ref$locale === undefined ? defaultLocaleName : _ref$locale;
-    var _ref$transformCode = _ref.transformCode;
-    var transformCode = _ref$transformCode === undefined ? function (code) {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref$debug = _ref.debug,
+        debug = _ref$debug === undefined ? false : _ref$debug,
+        _ref$UTCOffset = _ref.UTCOffset,
+        UTCOffset = _ref$UTCOffset === undefined ? null : _ref$UTCOffset,
+        _ref$locale = _ref.locale,
+        locale = _ref$locale === undefined ? defaultLocaleName : _ref$locale,
+        _ref$transformCode = _ref.transformCode,
+        transformCode = _ref$transformCode === undefined ? function (code) {
       return code;
-    } : _ref$transformCode;
-    var _ref$locales = _ref.locales;
-    var locales = _ref$locales === undefined ? [] : _ref$locales;
+    } : _ref$transformCode,
+        _ref$locales = _ref.locales,
+        locales = _ref$locales === undefined ? [] : _ref$locales;
+
     (0, _classCallCheck3.default)(this, DataFormatter);
 
 
@@ -275,7 +274,7 @@ module.exports = function () {
     key: 'restoreOrigins',
     value: function restoreOrigins(value, origins) {
       return value.toString().replace(/\[(?:(\$*?)|(.*?))\]/g, function (a, m1) {
-        return m1 && origins[m1.length - 1] || a;
+        return m1 && origins['[' + m1 + ']'] || a;
       });
     }
   }, {
@@ -415,11 +414,11 @@ module.exports = function () {
     value: function formatAsDateTimeNormal(n, pattern) {
       var _this3 = this;
 
-      var _locale = this.locale;
-      var days = _locale.days;
-      var daysShort = _locale.daysShort;
-      var months = _locale.months;
-      var monthsShort = _locale.monthsShort;
+      var _locale = this.locale,
+          days = _locale.days,
+          daysShort = _locale.daysShort,
+          months = _locale.months,
+          monthsShort = _locale.monthsShort;
 
       var foundAMPM = false;
 
@@ -651,7 +650,7 @@ module.exports = function () {
     }
   }, {
     key: 'createNumberCode',
-    value: function createNumberCode(section, shouldAbsNumber) {
+    value: function createNumberCode(section, shouldAbsNumber, origins) {
       var numberCode = new _utils.Code();
 
       // Abs
@@ -671,8 +670,21 @@ module.exports = function () {
 
         // Spaces before end and decimal separator (.)
         section = section.replace(/(0|#|\?)(\s+)([^0?#]*?)($|\.)/, function (a, m1, m2, m3, m4) {
-          factor *= Math.pow(1000, m2.length);
-          return m1 + m3 + m4;
+          // Find currency symbol from pattern
+          var key = m3.match(/\[.*?\]/);
+          var origin = origins[key];
+          var hasBareSymbol = m3 === '$' || m3 === '€' || m3 === '£';
+          var hasQuotedSymbol = origin === '$' || origin === '€' || origin === '£';
+
+          var hasSpace = m2.length > 0;
+          var space = '';
+          if (hasSpace && (hasBareSymbol || hasQuotedSymbol)) {
+            space = m2;
+          } else {
+            // View space as divide by 1000 if number is separated by space
+            factor *= Math.pow(1000, hasSpace ? 1 : 0);
+          }
+          return m1 + space + m3 + m4;
         });
 
         // Percents
@@ -686,25 +698,23 @@ module.exports = function () {
           numberCode.append('\n          n /= {0};\n        ', factor);
         }
 
-        var fractialMatch = void 0;
-        var decimalMatch = void 0;
+        var fractialMatch = section.match(/(.*?)\/(.*)/);
+        var decimalMatch = section.match(/(.*?)\.(.*)/);
 
         switch (true) {
-
           // Fractial form
-          case !!(fractialMatch = section.match(/(.*?)\/(.*)/)):
+          case !!fractialMatch:
             numberCode.append(this.createNumberFractialCode(fractialMatch));
             break;
 
           // Decimal form
-          case !!(decimalMatch = section.match(/(.*?)\.(.*)/)):
+          case !!decimalMatch:
             numberCode.append(this.createNumberDecimalCode(decimalMatch));
             break;
 
           // Integer form
           default:
             numberCode.append(this.createNumberIntegerCode(section));
-
         }
       }
 
@@ -760,7 +770,7 @@ module.exports = function () {
     }
   }, {
     key: 'createSectionCode',
-    value: function createSectionCode(section, sectionIndex, sectionsCount) {
+    value: function createSectionCode(section, sectionIndex, sectionsCount, origins) {
       // Start creating code for function
       var code = new _utils.Code();
 
@@ -828,7 +838,7 @@ module.exports = function () {
           if (!condition) {
             condition = 'type === "Number"';
           }
-          formatCode.append(this.createNumberCode(section, shouldAbsNumber));
+          formatCode.append(this.createNumberCode(section, shouldAbsNumber, origins));
           break;
 
         // DateTime
@@ -858,25 +868,30 @@ module.exports = function () {
     value: function createPatternCode(pattern) {
       var _this4 = this;
 
-      var origins = [];
       var replaces = '';
+      var origins = {};
 
       // Find quotes, slash symbols
       var patternReplaced = pattern.replace(/"([^"]+)"|\\(.?)|(_.?)|(\*.?)|(")/g, function (a, m1, m2, m3) {
         // Quote found
         if (m1) {
-          origins.push(m1.replace(/("|'|\\)/g, "\\$1"));
-          return '[' + (replaces += '$') + ']';
+          var quoted = m1.replace(/("|'|\\)/g, "\\$1");
+          var replaced = '[' + (replaces += '$') + ']';
+          origins[replaced] = quoted;
+          return replaced;
         }
         // Slash found
         if (m2) {
-          origins.push(m2.replace(/("|'|\\)/g, "\\$1"));
-          return '[' + (replaces += '$') + ']';
+          var slashed = m2.replace(/("|'|\\)/g, "\\$1");
+          var _replaced = '[' + (replaces += '$') + ']';
+          origins[_replaced] = slashed;
+          return _replaced;
         }
         // Space found
         if (m3) {
-          origins.push(' ');
-          return '[' + (replaces += '$') + ']';
+          var _replaced2 = '[' + (replaces += '$') + ']';
+          origins[_replaced2] = ' ';
+          return _replaced2;
         }
         return '';
       });
@@ -895,7 +910,7 @@ module.exports = function () {
 
       // Loop trough sections
       sections.forEach(function (section, sectionIndex) {
-        return code.append(_this4.createSectionCode(section, sectionIndex, sections.length));
+        return code.append(_this4.createSectionCode(section, sectionIndex, sections.length, origins));
       });
 
       // Return statement

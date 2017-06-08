@@ -6,7 +6,7 @@ module.exports = {
   monthsShort: ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'],
   days: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
   daysShort: ['su', 'mo', 'tu', 'we', 'th', 'fr', 'sa'],
-  thousandSeparator: ' ',
+  thousandSeparator: ',',
   decimalSeparator: '.',
   formats: {
     'General Number': '#.#',
