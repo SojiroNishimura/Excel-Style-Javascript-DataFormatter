@@ -1,3 +1,4 @@
+import Locales from './locales';
 import { Code } from './utils';
 import defaultLocaleData from './locales/en-US';
 const defaultLocaleName = 'en-US';
@@ -18,7 +19,6 @@ module.exports = class DataFormatter {
     UTCOffset = null,
     locale = defaultLocaleName,
     transformCode = (code)=> code,
-    locales = []
   } = {}) {
 
     this.memoized = {};
@@ -28,8 +28,7 @@ module.exports = class DataFormatter {
     this.zeroDate = this.createDate('1899-12-31T00:00:00.000');
 
     // Save defined locales
-    this.locales = { [defaultLocaleName]: defaultLocaleData };
-    this.defineLocales(locales);
+    this.locales = Locales;
 
     // Set default locale
     this.setLocale(locale);
@@ -43,22 +42,19 @@ module.exports = class DataFormatter {
   }
 
   /**
-   * Defines locales
-   * @param  {array} locales
-   */
-  defineLocales(locales) {
-    locales.forEach((locale)=>
-      this.locales[locale.name] = locale
-    );
-  }
-
-  /**
    * Sets locale
    * If locale doesn't exist, sets default
    * @param {string} locale
    */
-  setLocale(locale) {
-    this.locale = this.locales[locale] || this.locales[defaultLocaleName];
+  setLocale(locale, options) {
+    this.locale = this.locales[locale] ?
+      Object.assign({}, this.locales[locale]) : Object.assign({}, this.locales[defaultLocaleName]);
+    
+    if (options) {
+      const { thousandSeparator, decimalSeparator } = options;
+      if (thousandSeparator) this.locale.thousandSeparator = thousandSeparator;
+      if (decimalSeparator) this.locale.decimalSeparator = decimalSeparator;
+    }
     this.clearMemoizedFunctions();
   }
 

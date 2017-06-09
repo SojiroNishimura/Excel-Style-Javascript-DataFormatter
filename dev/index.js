@@ -1,8 +1,8 @@
 'use strict';
 
-var _defineProperty2 = require('babel-runtime/helpers/defineProperty');
+var _assign = require('babel-runtime/core-js/object/assign');
 
-var _defineProperty3 = _interopRequireDefault(_defineProperty2);
+var _assign2 = _interopRequireDefault(_assign);
 
 var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
@@ -11,6 +11,10 @@ var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
 var _createClass2 = require('babel-runtime/helpers/createClass');
 
 var _createClass3 = _interopRequireDefault(_createClass2);
+
+var _locales = require('./locales');
+
+var _locales2 = _interopRequireDefault(_locales);
 
 var _utils = require('./utils');
 
@@ -44,9 +48,7 @@ module.exports = function () {
         _ref$transformCode = _ref.transformCode,
         transformCode = _ref$transformCode === undefined ? function (code) {
       return code;
-    } : _ref$transformCode,
-        _ref$locales = _ref.locales,
-        locales = _ref$locales === undefined ? [] : _ref$locales;
+    } : _ref$transformCode;
 
     (0, _classCallCheck3.default)(this, DataFormatter);
 
@@ -58,8 +60,7 @@ module.exports = function () {
     this.zeroDate = this.createDate('1899-12-31T00:00:00.000');
 
     // Save defined locales
-    this.locales = (0, _defineProperty3.default)({}, defaultLocaleName, _enUS2.default);
-    this.defineLocales(locales);
+    this.locales = _locales2.default;
 
     // Set default locale
     this.setLocale(locale);
@@ -77,21 +78,6 @@ module.exports = function () {
     }
 
     /**
-     * Defines locales
-     * @param  {array} locales
-     */
-
-  }, {
-    key: 'defineLocales',
-    value: function defineLocales(locales) {
-      var _this = this;
-
-      locales.forEach(function (locale) {
-        return _this.locales[locale.name] = locale;
-      });
-    }
-
-    /**
      * Sets locale
      * If locale doesn't exist, sets default
      * @param {string} locale
@@ -99,8 +85,16 @@ module.exports = function () {
 
   }, {
     key: 'setLocale',
-    value: function setLocale(locale) {
-      this.locale = this.locales[locale] || this.locales[defaultLocaleName];
+    value: function setLocale(locale, options) {
+      this.locale = this.locales[locale] ? (0, _assign2.default)({}, this.locales[locale]) : (0, _assign2.default)({}, this.locales[defaultLocaleName]);
+
+      if (options) {
+        var thousandSeparator = options.thousandSeparator,
+            decimalSeparator = options.decimalSeparator;
+
+        if (thousandSeparator) this.locale.thousandSeparator = thousandSeparator;
+        if (decimalSeparator) this.locale.decimalSeparator = decimalSeparator;
+      }
       this.clearMemoizedFunctions();
     }
 
@@ -359,7 +353,7 @@ module.exports = function () {
   }, {
     key: 'formatAsDateTimeElapsed',
     value: function formatAsDateTimeElapsed(n, foundDays, foundHours, foundMinutes, pattern) {
-      var _this2 = this;
+      var _this = this;
 
       n = Math.abs(n.getTime() - this.zeroDate.getTime());
 
@@ -375,7 +369,7 @@ module.exports = function () {
       return pattern.replace(/(dd)|(d)|(hh)|(h)|(mm)|(m)|(ss)|(s)/gi, function (a, dd, d, hh, h, mm, m, ss, s) {
 
         if (dd) {
-          return _this2.applyNumberPattern(days, '00');
+          return _this.applyNumberPattern(days, '00');
         }
 
         if (d) {
@@ -383,7 +377,7 @@ module.exports = function () {
         }
 
         if (hh) {
-          return _this2.applyNumberPattern(hours, '00');
+          return _this.applyNumberPattern(hours, '00');
         }
 
         if (h) {
@@ -391,7 +385,7 @@ module.exports = function () {
         }
 
         if (mm) {
-          return _this2.applyNumberPattern(minutes, '00');
+          return _this.applyNumberPattern(minutes, '00');
         }
 
         if (m) {
@@ -399,7 +393,7 @@ module.exports = function () {
         }
 
         if (ss) {
-          return _this2.applyNumberPattern(seconds, '00');
+          return _this.applyNumberPattern(seconds, '00');
         }
 
         if (s) {
@@ -412,7 +406,7 @@ module.exports = function () {
   }, {
     key: 'formatAsDateTimeNormal',
     value: function formatAsDateTimeNormal(n, pattern) {
-      var _this3 = this;
+      var _this2 = this;
 
       var _locale = this.locale,
           days = _locale.days,
@@ -439,11 +433,11 @@ module.exports = function () {
         }
 
         if (fmin) {
-          return fmin + _this3.applyNumberPattern(minutes, '00');
+          return fmin + _this2.applyNumberPattern(minutes, '00');
         }
 
         if (fmin2) {
-          return _this3.applyNumberPattern(minutes, '00') + fmin2;
+          return _this2.applyNumberPattern(minutes, '00') + fmin2;
         }
 
         if (mmin) {
@@ -460,7 +454,7 @@ module.exports = function () {
       return res.replace(/(ss)|(s)|(hh)|(h)|(dddd)|(ddd)|(dd)|(d)|(mmmmm)|(mmmm)|(mmm)|(mm)|(m)|(yyyy)|(yy)|(\[\])/gi, function (a, ss, s, hh, h, dddd, ddd, dd, d, mmmmm, mmmm, mmm, mm, m, yyyy, yy, ampm) {
 
         if (ss) {
-          return _this3.applyNumberPattern(seconds, '00');
+          return _this2.applyNumberPattern(seconds, '00');
         }
 
         if (s) {
@@ -468,7 +462,7 @@ module.exports = function () {
         }
 
         if (hh) {
-          return _this3.applyNumberPattern(foundAMPM ? hours % 12 : hours, '00');
+          return _this2.applyNumberPattern(foundAMPM ? hours % 12 : hours, '00');
         }
 
         if (h) {
@@ -484,7 +478,7 @@ module.exports = function () {
         }
 
         if (dd) {
-          return _this3.applyNumberPattern(date, '00');
+          return _this2.applyNumberPattern(date, '00');
         }
 
         if (d) {
@@ -504,7 +498,7 @@ module.exports = function () {
         }
 
         if (mm) {
-          return _this3.applyNumberPattern(month + 1, '00');
+          return _this2.applyNumberPattern(month + 1, '00');
         }
 
         if (m) {
@@ -866,7 +860,7 @@ module.exports = function () {
   }, {
     key: 'createPatternCode',
     value: function createPatternCode(pattern) {
-      var _this4 = this;
+      var _this3 = this;
 
       var replaces = '';
       var origins = {};
@@ -910,7 +904,7 @@ module.exports = function () {
 
       // Loop trough sections
       sections.forEach(function (section, sectionIndex) {
-        return code.append(_this4.createSectionCode(section, sectionIndex, sections.length, origins));
+        return code.append(_this3.createSectionCode(section, sectionIndex, sections.length, origins));
       });
 
       // Return statement

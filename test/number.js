@@ -1,13 +1,5 @@
 const { assert } = require('chai');
-const df = new (require('../src'))(
-  // {
-  //     locales: [
-  //       require('../lib/locales/en-US'),
-  //       require('../lib/locales/de-DE'),
-  //       require('../lib/locales/ru')
-  //     ]
-  //   }
-);
+const df = new (require('../src'))();
 
 describe('Number', () => {
   it('Decimal form', () => {
