@@ -11,9 +11,9 @@ const entries = [
   },
 
   {
-    filename: 'ru',
-    library: 'DataFormatter_ru',
-    src: path.join(__dirname, 'src', 'locales', 'ru'),
+    filename: 'ru-RU',
+    library: 'DataFormatter_ruRU',
+    src: path.join(__dirname, 'src', 'locales', 'ru-RU'),
     path: path.join(__dirname, 'lib', 'locales')
   },
 
@@ -22,11 +22,18 @@ const entries = [
     library: 'DataFormatter_enUS',
     src: path.join(__dirname, 'src', 'locales', 'en-US'),
     path: path.join(__dirname, 'lib', 'locales')
+  },
+
+  {
+    filename: 'de-DE',
+    library: 'DataFormatter_deDE',
+    src: path.join(__dirname, 'src', 'locales', 'de-DE'),
+    path: path.join(__dirname, 'lib', 'locales')
   }
 
 ];
 
-module.exports = entries.map((entry)=> ({
+module.exports = entries.map((entry) => ({
   entry: entry.src,
   devtool: 'source-map',
   output: {

@@ -1,13 +1,13 @@
 const { assert } = require('chai');
 const df = new (require('../lib'))();
-const ru = require('../lib/locales/ru');
+const ru = require('../lib/locales/ru-RU');
 
 df.defineLocales([ ru ]);
 
 describe('Locale', ()=> {
 
   it('Set locale', ()=> {
-    df.setLocale('ru');
+    df.setLocale('ru-RU');
     assert.equal(df.format('1', 'Number', 'Yes/No').value, 'Да');
 
     df.setLocale('en-US');
