@@ -156,11 +156,13 @@ module.exports = class DataFormatter {
       let separateThousands = false;
       let mostLeftDigit;
 
-      pattern = pattern.replace(/(0|#|\?)(,+?)(0|#|\?)/g, (a, m1, m2, m3)=> {
+      const sepRegex = this.locale.thousandSeparator === '.' ? '(\\.)' : `(${this.locale.thousandSeparator})`;
+      const reg = new RegExp('(0|#|\\?)' + sepRegex + '(0|#|\\?)', 'g');
+
+      pattern = pattern.replace(reg, (a, m1, m2, m3)=> {
         separateThousands = true;
         return m1 + m3;
       });
-
       // Add separation
       if (separateThousands) {
         let j = n.length - 3;
@@ -651,7 +653,11 @@ module.exports = class DataFormatter {
         // Find currency symbol from pattern
         const key = m3.match(/\[.*?\]/);
         const origin = origins[key];
-        const hasBareSymbol = m3 === '$' || m3 === '€' || m3 === '£';
+        const hasDollar = m3.indexOf('$') >= 0;
+        const hasEuro = m3.indexOf('€') >= 0;
+        const hasPound = m3.indexOf('£') >= 0;
+
+        const hasBareSymbol = hasDollar || hasEuro || hasPound;
         const hasQuotedSymbol = origin === '$' || origin === '€' || origin === '£';
 
         const hasSpace = m2.length > 0;
@@ -678,8 +684,9 @@ module.exports = class DataFormatter {
         `, factor);
       }
 
-      let fractialMatch = section.match(/(.*?)\/(.*)/);
-      let decimalMatch = section.match(/(.*?)\.(.*)/);
+      const sepRegex = this.locale.decimalSeparator === '.' ? '\\.' : this.locale.decimalSeparator;
+      const fractialMatch = section.match(/(.*?)\/(.*)/);
+      const decimalMatch = section.match(new RegExp('(.*?)' + sepRegex + '(.*)'));
 
       switch (true) {
         // Fractial form

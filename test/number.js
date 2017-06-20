@@ -72,5 +72,28 @@ describe('Number', () => {
       assert.equal(df.format('9145.39', 'Number', "_(* #,##0_);_(* (#,##0);_(* \"-\"??_);_(@_)"
       ).value, ' 9,145 ');
     });
-  })
+
+    it('Small value With spaces and bare symbol', () => {
+      assert.equal(df.format('41', 'Number', '_-* #,##0 €_-;-* #,##0 €_-;_-* "-"?? €_-;_-@_-'
+      ).value, ' 41 € ');
+    });
+
+    it('Small value With custom separators', () => {
+      df.setLocale('en-US', { decimalSeparator: ',', thousandSeparator: '.' });
+      assert.equal(df.format('41', 'Number', '_-* #.##0 €_-;-* #.##0 €_-;_-* "-"?? €_-;_-@_-'
+      ).value, ' 41 € ');
+    });
+
+    it('Decimal small value With custom separators', () => {
+      df.setLocale('en-US', { decimalSeparator: ',', thousandSeparator: '.' });
+      assert.equal(df.format('41.1234', 'Number', '_-* #.##0,0# €_-;-* #.##0,0# €_-;_-* "-"?? €_-;_-@_-'
+      ).value, ' 41,12 € ');
+    });
+
+    it('Decimal big value With custom separators', () => {
+      df.setLocale('en-US', { decimalSeparator: ',', thousandSeparator: '.' });
+      assert.equal(df.format('1000000.1234', 'Number', '_-* #.##0,0# €_-;-* #.##0,0# €_-;_-* "-"?? €_-;_-@_-'
+      ).value, ' 1.000.000,12 € ');
+    });
+  });
 });
